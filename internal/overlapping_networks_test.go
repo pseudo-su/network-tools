@@ -1,8 +1,7 @@
 package internal
 
 import (
-	"encoding/csv"
-	"fmt"
+	"net"
 	"strings"
 	"testing"
 
@@ -10,11 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func readCSVFixture(t *testing.T, in string) [][]string {
-	csvReader := csv.NewReader(strings.NewReader(in))
-	records, err := csvReader.ReadAll()
+func CIDRFixture(t *testing.T, in string) *net.IPNet {
+	_, nw, err := net.ParseCIDR(in)
 	require.NoError(t, err)
-	return records
+	return nw
 }
 
 func TestFindOverlappingNetworks(t *testing.T) {
@@ -28,27 +26,27 @@ func TestFindOverlappingNetworks(t *testing.T) {
 10.0.0.0/28
 10.0.0.0/8
 `
-	fixture := readCSVFixture(t, fixtureString)
-	fmt.Println(fixture)
-
-	expectedOverlapping := map[*IPV4Network][]*IPV4Network{
-		NewIPV4Network("192.168.0.0/16"): {
-			NewIPV4Network("192.168.52.0/20"),
-			NewIPV4Network("192.168.1.0/24"),
-			NewIPV4Network("192.168.5.54/32"),
-			NewIPV4Network("192.168.1.64/29"),
-		},
-		NewIPV4Network("10.0.0.0/81"): {
-			NewIPV4Network("10.0.50.0/24"),
-		},
-		NewIPV4Network("10.0.0.0/8"): {
-			NewIPV4Network("0.0.0.0/28"),
-		},
-		NewIPV4Network("192.168.1.0/24"): {
-			NewIPV4Network("192.168.1.64/29"),
-		},
-	}
-	networks := NetworksFromCSV(fixture)
+	networks, err := ReadNetworks(strings.NewReader(fixtureString))
+	require.NoError(t, err)
 	overlapping := FindOverlappingNetworks(networks)
-	assert.Equal(t, expectedOverlapping, overlapping)
+
+	assert.NotEmpty(t, overlapping)
+}
+
+func TestIsSubnet(t *testing.T) {
+	_, network, err := net.ParseCIDR("192.168.0.0/16")
+	require.NoError(t, err)
+	_, subNetwork, err := net.ParseCIDR("192.168.1.0/24")
+	require.NoError(t, err)
+	_, subSubNetwork, err := net.ParseCIDR("192.168.1.64/29")
+	require.NoError(t, err)
+
+	assert.True(t, isSubnet(subNetwork, network))
+	assert.True(t, isSubnet(subSubNetwork, network))
+
+	assert.False(t, isSubnet(network, subNetwork))
+	assert.True(t, isSubnet(subSubNetwork, subNetwork))
+
+	assert.False(t, isSubnet(network, subSubNetwork))
+	assert.False(t, isSubnet(subNetwork, subSubNetwork))
 }

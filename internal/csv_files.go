@@ -1,26 +1,38 @@
 package internal
 
 import (
+	"bufio"
 	"encoding/csv"
-	"os"
+	"io"
+	"net"
+	"strings"
 )
 
-func ReadCSVFile(inFile string) ([][]string, error) {
-	f, err := os.Open(inFile)
-	if err != nil {
-		return [][]string{}, err
+func ReadNetworks(reader io.Reader) ([]*net.IPNet, error) {
+	res := []*net.IPNet{}
+
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		txt := strings.TrimSpace(scanner.Text())
+		if txt == "" {
+			continue
+		}
+		_, pn, err := net.ParseCIDR(txt)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, pn)
 	}
-	defer f.Close()
-	csvReader := csv.NewReader(f)
-	records, err := csvReader.ReadAll()
-	if err != nil {
-		return [][]string{}, err
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
-	return records, nil
+
+	return res, nil
 }
 
-func WriteCSVFile(outFile string, outCSV [][]string) error {
-	w := csv.NewWriter(os.Stdout)
+func WriteCSV(writer io.Writer, outCSV [][]string) error {
+	w := csv.NewWriter(writer)
 	w.WriteAll(outCSV)
 
 	if err := w.Error(); err != nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"os"
 
@@ -26,14 +27,36 @@ func FindOverlappingNetworksCommand() *cli.Command {
 		},
 		Usage: "Find overlapping networks from csv input",
 		Action: func(c *cli.Context) error {
-			inputFile := c.String("input-file")
-			outputFile := c.String("output-file")
-			inputCSV, err := internal.ReadCSVFile(inputFile)
+			inFile, err := os.Open(c.String("input-file"))
 			if err != nil {
 				return err
 			}
-			overlappingNetworks := internal.FindOverlappingNetworks(inputCSV)
-			err = internal.WriteCSVFile(outputFile, overlappingNetworks)
+			defer inFile.Close()
+
+			networks, err := internal.ReadNetworks(inFile)
+			overlappingNetworks := internal.FindOverlappingNetworks(networks)
+			csvOutput := [][]string{
+				[]string{"Network", "Subnet"},
+			}
+			for key, subnets := range overlappingNetworks {
+				for _, subnet := range subnets {
+					csvOutput = append(csvOutput, []string{key.String(), subnet.String()})
+				}
+			}
+
+			var out io.Writer
+			if c.String("output-file") == "stdout" {
+				out = os.Stdout
+			} else {
+
+				outFile, err := os.OpenFile(c.String("output-file"), os.O_RDWR|os.O_CREATE, 0755)
+				if err != nil {
+					return err
+				}
+				defer outFile.Close()
+				out = outFile
+			}
+			err = internal.WriteCSV(out, csvOutput)
 			if err != nil {
 				return err
 			}

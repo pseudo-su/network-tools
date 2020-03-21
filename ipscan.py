@@ -3,7 +3,7 @@ from operator import itemgetter
 from netaddr import IPNetwork
 
 colnames = ['routes']
-data = pandas.read_csv("test-input.csv", names=colnames)
+data = pandas.read_csv("./data-in.csv", names=colnames)
 
 routes = data.routes.tolist()
 def createNestedList(list):

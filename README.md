@@ -1,6 +1,11 @@
 # Network tools
 
+Install
+```
+env GO111MODULE=off go get -u github.com/pseudo-su/network-tools/cmd/network-tools
+```
+
 Usage:
 ```sh
-go run github.com/pseudo-su/network-tools find-overlapping-networks -in=./networks.csv -out=./overlapping-networks.csv
+network-tools find-overlapping-networks -in=./data-in.csv -out=./data-out.csv
 ```

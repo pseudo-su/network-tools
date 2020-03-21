@@ -1,20 +1,36 @@
 package internal
 
-func FindOverlappingNetworks(networks []*IPV4Network) map[*IPV4Network][]*IPV4Network {
-	result := map[*IPV4Network][]*IPV4Network{}
+import (
+	"net"
+)
+
+func isSubnet(sub, parent *net.IPNet) bool {
+	maskedParent := parent.IP.Mask(parent.Mask)
+	maskedSub := sub.IP.Mask(parent.Mask)
+
+	pSize, _ := parent.Mask.Size()
+	sSize, _ := sub.Mask.Size()
+
+	res := maskedParent.Equal(maskedSub) && pSize <= sSize
+
+	return res
+}
+
+func FindOverlappingNetworks(networks []*net.IPNet) map[*net.IPNet][]*net.IPNet {
+	result := map[*net.IPNet][]*net.IPNet{}
 
 	for i, network1 := range networks {
 		for j := i + 1; j < len(networks); j++ {
 			network2 := networks[j]
 			switch {
-			case network1.Contains(network2):
+			case isSubnet(network2, network1):
 				if _, ok := result[network1]; !ok {
-					result[network1] = []*IPV4Network{}
+					result[network1] = []*net.IPNet{}
 				}
 				result[network1] = append(result[network1], network2)
-			case network2.Contains(network1):
+			case isSubnet(network1, network2):
 				if _, ok := result[network1]; !ok {
-					result[network1] = []*IPV4Network{}
+					result[network1] = []*net.IPNet{}
 				}
 				result[network2] = append(result[network2], network1)
 			}
@@ -22,16 +38,4 @@ func FindOverlappingNetworks(networks []*IPV4Network) map[*IPV4Network][]*IPV4Ne
 	}
 
 	return result
-}
-
-type NetworkOverlapResult int
-
-const (
-	NoOverlap NetworkOverlapResult = iota
-	FirstOverlapsSecond
-	SecondOverlapsFirst
-)
-
-func isOverlapping(net1, net2 *IPV4Network) NetworkOverlapResult {
-	return NoOverlap
 }
