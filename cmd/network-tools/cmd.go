@@ -15,26 +15,49 @@ func FindSubnetsCommand() *cli.Command {
 		Aliases: []string{},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "input-file",
-				Required: true,
-				Aliases:  []string{"in"},
+				Name:    "input-file",
+				Value:   "stdin",
+				Aliases: []string{"in"},
 			},
 			&cli.StringFlag{
-				Name:     "output-file",
-				Required: true,
-				Aliases:  []string{"out"},
+				Name:    "output-file",
+				Value:   "stdout",
+				Aliases: []string{"out"},
 			},
 		},
 		Usage: "Find subnets from csv input",
 		Action: func(c *cli.Context) error {
-			inFile, err := os.Open(c.String("input-file"))
-			if err != nil {
-				return err
+			// Setup input reader
+			var in io.Reader
+			if c.String("input-file") == "stdin" {
+				in = os.Stdin
+			} else {
+				inFile, err := os.Open(c.String("input-file"))
+				if err != nil {
+					return err
+				}
+				defer inFile.Close()
+				in = inFile
 			}
-			defer inFile.Close()
 
-			networks, err := internal.ReadNetworks(inFile)
+			// Setup output writer
+			var out io.Writer
+			if c.String("output-file") == "stdout" {
+				out = os.Stdout
+			} else {
+				outFile, err := os.OpenFile(c.String("output-file"), os.O_RDWR|os.O_CREATE, 0755)
+				if err != nil {
+					return err
+				}
+				defer outFile.Close()
+				out = outFile
+			}
+
+			// Read networks and find subnets
+			networks, err := internal.ReadNetworks(in)
 			subnets := internal.FindSubnets(networks)
+
+			// Format csv output
 			csvOutput := [][]string{
 				[]string{"Network", "Subnet"},
 			}
@@ -44,22 +67,12 @@ func FindSubnetsCommand() *cli.Command {
 				}
 			}
 
-			var out io.Writer
-			if c.String("output-file") == "stdout" {
-				out = os.Stdout
-			} else {
-
-				outFile, err := os.OpenFile(c.String("output-file"), os.O_RDWR|os.O_CREATE, 0755)
-				if err != nil {
-					return err
-				}
-				defer outFile.Close()
-				out = outFile
-			}
+			// write output
 			err = internal.WriteCSV(out, csvOutput)
 			if err != nil {
 				return err
 			}
+
 			return nil
 		},
 	}
