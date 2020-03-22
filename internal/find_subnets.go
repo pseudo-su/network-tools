@@ -4,19 +4,19 @@ import (
 	"net"
 )
 
-func isSubnet(sub, parent *net.IPNet) bool {
-	maskedParent := parent.IP.Mask(parent.Mask)
-	maskedSub := sub.IP.Mask(parent.Mask)
+func isSubnet(possibleSubnet, possibleSupernet *net.IPNet) bool {
+	maskedSupernet := possibleSupernet.IP.Mask(possibleSupernet.Mask)
+	maskedSub := possibleSubnet.IP.Mask(possibleSupernet.Mask)
 
-	pSize, _ := parent.Mask.Size()
-	sSize, _ := sub.Mask.Size()
+	superSize, _ := possibleSupernet.Mask.Size()
+	subSize, _ := possibleSubnet.Mask.Size()
 
-	res := maskedParent.Equal(maskedSub) && pSize <= sSize
+	res := maskedSupernet.Equal(maskedSub) && superSize <= subSize
 
 	return res
 }
 
-func FindOverlappingNetworks(networks []*net.IPNet) map[*net.IPNet][]*net.IPNet {
+func FindSubnets(networks []*net.IPNet) map[*net.IPNet][]*net.IPNet {
 	result := map[*net.IPNet][]*net.IPNet{}
 
 	for i, network1 := range networks {

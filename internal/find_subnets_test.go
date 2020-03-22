@@ -15,7 +15,7 @@ func CIDRFixture(t *testing.T, in string) *net.IPNet {
 	return nw
 }
 
-func TestFindOverlappingNetworks(t *testing.T) {
+func TestFindSubnets(t *testing.T) {
 	fixtureString := `
 192.168.0.0/16
 192.168.1.0/24
@@ -28,9 +28,9 @@ func TestFindOverlappingNetworks(t *testing.T) {
 `
 	networks, err := ReadNetworks(strings.NewReader(fixtureString))
 	require.NoError(t, err)
-	overlapping := FindOverlappingNetworks(networks)
+	subnets := FindSubnets(networks)
 
-	assert.NotEmpty(t, overlapping)
+	assert.NotEmpty(t, subnets)
 }
 
 func TestIsSubnet(t *testing.T) {

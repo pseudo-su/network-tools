@@ -9,9 +9,9 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func FindOverlappingNetworksCommand() *cli.Command {
+func FindSubnetsCommand() *cli.Command {
 	return &cli.Command{
-		Name:    "find-overlapping-networks",
+		Name:    "find-subnets",
 		Aliases: []string{},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -25,7 +25,7 @@ func FindOverlappingNetworksCommand() *cli.Command {
 				Aliases:  []string{"out"},
 			},
 		},
-		Usage: "Find overlapping networks from csv input",
+		Usage: "Find subnets from csv input",
 		Action: func(c *cli.Context) error {
 			inFile, err := os.Open(c.String("input-file"))
 			if err != nil {
@@ -34,11 +34,11 @@ func FindOverlappingNetworksCommand() *cli.Command {
 			defer inFile.Close()
 
 			networks, err := internal.ReadNetworks(inFile)
-			overlappingNetworks := internal.FindOverlappingNetworks(networks)
+			subnets := internal.FindSubnets(networks)
 			csvOutput := [][]string{
 				[]string{"Network", "Subnet"},
 			}
-			for key, subnets := range overlappingNetworks {
+			for key, subnets := range subnets {
 				for _, subnet := range subnets {
 					csvOutput = append(csvOutput, []string{key.String(), subnet.String()})
 				}
@@ -68,7 +68,7 @@ func FindOverlappingNetworksCommand() *cli.Command {
 func main() {
 	app := &cli.App{
 		Commands: []*cli.Command{
-			FindOverlappingNetworksCommand(),
+			FindSubnetsCommand(),
 		},
 	}
 
